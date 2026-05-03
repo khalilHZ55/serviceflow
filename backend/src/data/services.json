@@ -1,0 +1,22 @@
+[
+  {
+    "id": "s1",
+    "name": "Sesión de fisioterapia",
+    "duration": 60,
+    "price": 50,
+    "description": "Evaluación y tratamiento personalizado"
+  },
+  {
+    "id": "s2",
+    "name": "Masaje deportivo",
+    "duration": 45,
+    "price": 35,
+    "description": "Recuperación muscular post-entrenamiento"
+  },
+  {
+    "id": "s3",
+    "name": "Revisión postural",
+    "duration": 30,
+    "price": 25
+  }
+]

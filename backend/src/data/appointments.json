@@ -1,0 +1,39 @@
+[
+  {
+    "id": "a1",
+    "service": {
+      "id": "s1",
+      "name": "Sesión de fisioterapia",
+      "duration": 60,
+      "price": 50
+    },
+    "clientName": "María García",
+    "clientEmail": "maria@email.com",
+    "date": "2025-01-15T10:00:00",
+    "status": "confirmed"
+  },
+  {
+    "id": "a2",
+    "service": {
+      "id": "s2",
+      "name": "Masaje deportivo",
+      "duration": 45,
+      "price": 35
+    },
+    "clientName": "Carlos López",
+    "date": "2025-01-15T11:30:00",
+    "status": "pending"
+  },
+  {
+    "id": "a3",
+    "service": {
+      "id": "s1",
+      "name": "Sesión de fisioterapia",
+      "duration": 60,
+      "price": 50
+    },
+    "clientName": "Ana Martínez",
+    "date": "2025-01-10T09:00:00",
+    "status": "completed"
+  }
+]
