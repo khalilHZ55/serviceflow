@@ -8,7 +8,7 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://serviceflow.vercel.app',
+    'serviceflow-2uvg-j2ut9cdd9-khalilhz55s-projects.vercel.app',
   ],
 }));
 app.use(express.json());
