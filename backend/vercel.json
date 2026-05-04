@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "echo skip",
   "builds": [
     {
       "src": "api/index.ts",
@@ -14,6 +13,16 @@
     {
       "source": "/(.*)",
       "destination": "/api/index.ts"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://serviceflow-2uvg.vercel.app" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,PATCH,DELETE,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
     }
   ]
 }
