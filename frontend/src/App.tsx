@@ -1,11 +1,14 @@
 import Layout from './components/Layout';
 import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   return (
-    <ToastProvider>
-      <Layout />
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <Layout />
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
 
