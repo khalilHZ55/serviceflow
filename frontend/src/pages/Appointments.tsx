@@ -276,12 +276,31 @@ function Appointments() {
             <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
               {filteredAppointments.map((apt: Appointment) => (
                 <tr key={apt.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-gray-800 dark:text-white">{apt.clientName}</p>
-                    {apt.clientEmail && (
-                      <p className="text-gray-400 dark:text-gray-500 text-xs">{apt.clientEmail}</p>
-                    )}
-                  </td>
+                  
+              <td className="px-6 py-4">
+        <div className="flex items-center gap-2">
+          <div>
+            <p className="font-medium text-gray-800 dark:text-white">{apt.clientName}</p>
+            {apt.clientEmail && (
+              <p className="text-gray-400 dark:text-gray-500 text-xs">{apt.clientEmail}</p>
+            )}
+          </div>
+          {/* Icono de nota — solo aparece si hay nota */}
+          {apt.notes && (
+            <div className="relative group">
+              <span className="text-gray-300 dark:text-gray-600 hover:text-blue-500 cursor-default text-base">
+               📋
+              </span>
+              {/* Tooltip con el texto de la nota */}
+              <div className="absolute left-6 top-0 z-10 hidden group-hover:block w-48 bg-gray-800 dark:bg-gray-700 text-white text-xs rounded-lg px-3 py-2 shadow-lg">
+                {apt.notes}
+                {/* Flecha del tooltip */}
+                <div className="absolute -left-1 top-2 w-2 h-2 bg-gray-800 dark:bg-gray-700 rotate-45" />
+              </div>
+            </div>
+          )}
+        </div>
+      </td>
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                     <p>{apt.service.name}</p>
                     <p className="text-gray-400 dark:text-gray-500 text-xs">
