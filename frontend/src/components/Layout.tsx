@@ -3,12 +3,15 @@ import { useTheme } from '../context/ThemeContext';
 import Dashboard from '../pages/Dashboard';
 import Services from '../pages/Services';
 import Appointments from '../pages/Appointments';
+import { useAuth } from '../context/AuthContext';
+
 
 type Page = 'dashboard' | 'services' | 'appointments';
 
 function Layout() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const { isDark, toggleTheme } = useTheme();
+  const { logout } = useAuth();
 
   const navItems: { id: Page; label: string; icon: string }[] = [
     { id: 'dashboard',    label: 'Dashboard',  icon: '▤' },
@@ -52,6 +55,16 @@ function Layout() {
           ))}
         </nav>
 
+            <button
+  onClick={logout}
+  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+>
+  <span>→</span>
+  Cerrar sesión
+</button>
+
+
+            
         {/* Botón modo oscuro en la parte inferior del sidebar */}
         <div className="px-3 py-4 border-t border-gray-100 dark:border-gray-800">
           <button
