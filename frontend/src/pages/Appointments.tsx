@@ -33,7 +33,9 @@ function Appointments() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [slotError, setSlotError] = useState('');
 
+  // ─── Filtrado ──────────────────────────────────────────────────────────
   const filteredAppointments = useMemo(() => {
     if (!appointments) return [];
     return appointments.filter(apt => {
@@ -51,16 +53,47 @@ function Appointments() {
   }, [appointments, filters]);
 
   const activeFilterCount = Object.values(filters).filter(v => v !== '').length;
-
   function clearFilters() { setFilters(EMPTY_FILTERS); }
   function setFilter(key: keyof typeof EMPTY_FILTERS, value: string) {
     setFilters(prev => ({ ...prev, [key]: value }));
   }
 
+  // ─── Validación de disponibilidad en tiempo real ───────────────────────
+  async function checkSlot(date: string, time: string, serviceId: string) {
+    if (!date || !time || !serviceId) return;
+
+    const selectedService = services?.find(s => s.id === serviceId);
+    if (!selectedService) return;
+
+    const dateTime = `${date}T${time}:00`;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/appointments/availability?date=${dateTime}&duration=${selectedService.duration}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+      const data = await res.json();
+      setSlotError(data.available ? '' : 'Este horario ya está ocupado');
+    } catch {
+      // si falla la consulta dejamos que el backend lo valide al enviar
+    }
+  }
+
+  // ─── Crear cita ────────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (slotError) return;
+
     const selectedService = services?.find(s => s.id === form.serviceId);
-    if (!selectedService) { showToast('Selecciona un servicio válido', 'error'); return; }
+    if (!selectedService) {
+      showToast('Selecciona un servicio válido', 'error');
+      return;
+    }
+
     const dateTime = `${form.date}T${form.time}:00`;
     setSaving(true);
     try {
@@ -73,16 +106,21 @@ function Appointments() {
         status: 'pending',
       });
       setForm(EMPTY_FORM);
+      setSlotError('');
       setShowForm(false);
       refetch();
       showToast('Cita creada correctamente');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Error al crear la cita', 'error');
+      showToast(
+        err instanceof Error ? err.message : 'Error al crear la cita',
+        'error'
+      );
     } finally {
       setSaving(false);
     }
   }
 
+  // ─── Cambiar estado ────────────────────────────────────────────────────
   async function handleStatusChange(id: string, status: AppointmentStatus) {
     try {
       await appointmentsApi.updateStatus(id, status);
@@ -98,6 +136,8 @@ function Appointments() {
 
   return (
     <div className="space-y-6">
+
+      {/* Cabecera */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">Citas</h1>
@@ -106,13 +146,14 @@ function Appointments() {
           </p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => { setShowForm(!showForm); setSlotError(''); }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
         >
           {showForm ? 'Cancelar' : '+ Nueva cita'}
         </button>
       </div>
 
+      {/* Formulario nueva cita */}
       {showForm && (
         <form
           onSubmit={handleSubmit}
@@ -120,12 +161,17 @@ function Appointments() {
         >
           <h2 className="font-medium text-gray-700 dark:text-gray-300">Nueva cita</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Servicio */}
             <div className="md:col-span-2">
               <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Servicio *</label>
               <select
                 required
                 value={form.serviceId}
-                onChange={e => setForm({ ...form, serviceId: e.target.value })}
+                onChange={e => {
+                  setForm({ ...form, serviceId: e.target.value });
+                  checkSlot(form.date, form.time, e.target.value);
+                }}
                 className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecciona un servicio</option>
@@ -136,6 +182,8 @@ function Appointments() {
                 ))}
               </select>
             </div>
+
+            {/* Nombre */}
             <div>
               <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Nombre del cliente *</label>
               <input
@@ -146,6 +194,8 @@ function Appointments() {
                 placeholder="María García"
               />
             </div>
+
+            {/* Email */}
             <div>
               <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Email del cliente</label>
               <input
@@ -156,26 +206,46 @@ function Appointments() {
                 placeholder="maria@email.com"
               />
             </div>
+
+            {/* Fecha */}
             <div>
               <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Fecha *</label>
               <input
                 required
                 type="date"
                 value={form.date}
-                onChange={e => setForm({ ...form, date: e.target.value })}
+                onChange={e => {
+                  setForm({ ...form, date: e.target.value });
+                  checkSlot(e.target.value, form.time, form.serviceId);
+                }}
                 className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
+            {/* Hora */}
             <div>
               <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Hora *</label>
               <input
                 required
                 type="time"
                 value={form.time}
-                onChange={e => setForm({ ...form, time: e.target.value })}
-                className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={e => {
+                  setForm({ ...form, time: e.target.value });
+                  checkSlot(form.date, e.target.value, form.serviceId);
+                }}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white ${
+                  slotError
+                    ? 'border-red-400 dark:border-red-600'
+                    : 'border-gray-200 dark:border-gray-700'
+                }`}
               />
+              {/* Error de solapamiento justo debajo de la hora */}
+              {slotError && (
+                <p className="text-red-500 text-xs mt-1">{slotError}</p>
+              )}
             </div>
+
+            {/* Notas */}
             <div className="md:col-span-2">
               <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Notas</label>
               <textarea
@@ -187,9 +257,10 @@ function Appointments() {
               />
             </div>
           </div>
+
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || !!slotError}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             {saving ? 'Guardando...' : 'Crear cita'}
@@ -276,37 +347,39 @@ function Appointments() {
             <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
               {filteredAppointments.map((apt: Appointment) => (
                 <tr key={apt.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                  
-              <td className="px-6 py-4">
-        <div className="flex items-center gap-2">
-          <div>
-            <p className="font-medium text-gray-800 dark:text-white">{apt.clientName}</p>
-            {apt.clientEmail && (
-              <p className="text-gray-400 dark:text-gray-500 text-xs">{apt.clientEmail}</p>
-            )}
-          </div>
-          {/* Icono de nota — solo aparece si hay nota */}
-          {apt.notes && (
-            <div className="relative group">
-              <span className="text-gray-300 dark:text-gray-600 hover:text-blue-500 cursor-default text-base">
-               📋
-              </span>
-              {/* Tooltip con el texto de la nota */}
-              <div className="absolute left-6 top-0 z-10 hidden group-hover:block w-48 bg-gray-800 dark:bg-gray-700 text-white text-xs rounded-lg px-3 py-2 shadow-lg">
-                {apt.notes}
-                {/* Flecha del tooltip */}
-                <div className="absolute -left-1 top-2 w-2 h-2 bg-gray-800 dark:bg-gray-700 rotate-45" />
-              </div>
-            </div>
-          )}
-        </div>
-      </td>
+
+                  {/* Cliente + nota */}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <p className="font-medium text-gray-800 dark:text-white">{apt.clientName}</p>
+                        {apt.clientEmail && (
+                          <p className="text-gray-400 dark:text-gray-500 text-xs">{apt.clientEmail}</p>
+                        )}
+                      </div>
+                      {apt.notes && (
+                        <div className="relative group">
+                          <span className="text-gray-300 dark:text-gray-600 hover:text-blue-500 cursor-default text-base">
+                            📋
+                          </span>
+                          <div className="absolute left-6 top-0 z-10 hidden group-hover:block w-48 bg-gray-800 dark:bg-gray-700 text-white text-xs rounded-lg px-3 py-2 shadow-lg">
+                            {apt.notes}
+                            <div className="absolute -left-1 top-2 w-2 h-2 bg-gray-800 dark:bg-gray-700 rotate-45" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Servicio */}
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                     <p>{apt.service.name}</p>
                     <p className="text-gray-400 dark:text-gray-500 text-xs">
                       {apt.service.duration} min · {apt.service.price}€
                     </p>
                   </td>
+
+                  {/* Fecha y hora */}
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                     {new Date(apt.date).toLocaleDateString('es-ES', {
                       day: '2-digit', month: 'short', year: 'numeric',
@@ -318,9 +391,13 @@ function Appointments() {
                       })}
                     </span>
                   </td>
+
+                  {/* Estado */}
                   <td className="px-6 py-4">
                     <StatusBadge status={apt.status} />
                   </td>
+
+                  {/* Cambiar estado */}
                   <td className="px-6 py-4">
                     <select
                       value={apt.status}

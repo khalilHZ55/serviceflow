@@ -7,5 +7,6 @@ router.get('/',           appointmentController.getAll);
 router.get('/stats',      appointmentController.getStats);
 router.post('/',          appointmentController.create);
 router.patch('/:id/status', appointmentController.updateStatus);
+router.get('/availability', appointmentController.checkAvailability);
 
 export default router;

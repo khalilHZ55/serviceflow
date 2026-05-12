@@ -49,3 +49,20 @@ export function updateStatus(req: Request<{ id: string }>, res: Response): void 
 
   res.json(updated);
 }
+
+
+export function checkAvailability(req: Request, res: Response): void {
+  const { date, duration } = req.query;
+
+  if (!date || !duration) {
+    res.status(400).json({ error: 'Faltan parámetros: date y duration' });
+    return;
+  }
+
+  const available = appointmentService.isSlotAvailable(
+    date as string,
+    Number(duration)
+  );
+
+  res.json({ available });
+}

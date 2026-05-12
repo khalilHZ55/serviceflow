@@ -33,13 +33,39 @@ export function updateAppointmentStatus(
   return appointments[index];
 }
 
+// Comprueba si un nuevo horario se solapa con alguna cita existente
+// Solo comprueba citas que no estén canceladas
+export function isSlotAvailable(date: string, durationMinutes: number): boolean {
+  const newStart = new Date(date).getTime();
+  const newEnd   = newStart + durationMinutes * 60 * 1000;
+
+  return !appointments.some(apt => {
+    // Las citas canceladas no bloquean hueco
+    if (apt.status === 'cancelled') return false;
+
+    const existingStart = new Date(apt.date).getTime();
+    const existingEnd   = existingStart + apt.service.duration * 60 * 1000;
+
+    // Solapamiento: la nueva empieza antes de que termine la existente
+    // Y la nueva termina después de que empiece la existente
+    return newStart < existingEnd && newEnd > existingStart;
+  });
+}
 // ─── Crear una nueva cita ──────────────────────────────────────────────────
 export function createAppointment(
-  data: Omit<Appointment, 'id'>  // "Omit" = todos los campos menos 'id'
+  data: Omit<Appointment, 'id'>
 ): Appointment {
+  // Comprobamos disponibilidad antes de crear
+  const available = isSlotAvailable(data.date, data.service.duration);
+
+  if (!available) {
+    // Lanzamos un error con un mensaje claro
+    throw new Error('Ese horario ya está ocupado por otra cita');
+  }
+
   const newAppointment: Appointment = {
     ...data,
-    id: `a${Date.now()}`, // ID simple basado en timestamp
+    id: `a${Date.now()}`,
   };
   appointments.push(newAppointment);
   return newAppointment;
